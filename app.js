@@ -4,8 +4,8 @@
 
 // ── SUPABASE CONFIG ──
 // Reemplaza con tus credenciales de Supabase
-const SUPABASE_URL = "https://gdsdeqrynsmgoflialxm.supabase.co/rest/v1/";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkc2RlcXJ5bnNtZ29mbGlhbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTc1OTcsImV4cCI6MjA5Njc3MzU5N30.JQXSU_kNJfwyoqGv0Lr6w3o1M68gPPp_xbcEt2kBVdc";
+const SUPABASE_URL = "https://TU_PROJECT.supabase.co";
+const SUPABASE_KEY = "TU_ANON_KEY";
 
 const SK_EQ    = "m26_equipos";
 const SK_LLAVE = "m26_llave";
@@ -148,30 +148,118 @@ function renderMercados(probs,activos){
   }).join("");
 }
 
-// ══ RENDER TABLA GRUPO ══
+// ══ TABLA DE POSICIONES — independiente de probabilidades ══
+const SK_TABLA = "m26_tabla";
+
+async function cargarTabla() {
+  const rows = await sbGet("m26_tabla");
+  if (rows && rows.length > 0) {
+    const d = {};
+    rows.forEach(r => { d[r.equipo] = r.stats; });
+    localStorage.setItem(SK_TABLA, JSON.stringify(d));
+    return d;
+  }
+  const local = localStorage.getItem(SK_TABLA);
+  return local ? JSON.parse(local) : {};
+}
+
+async function guardarTablaEquipo(equipo, stats) {
+  const local = JSON.parse(localStorage.getItem(SK_TABLA)||"{}");
+  local[equipo] = stats;
+  localStorage.setItem(SK_TABLA, JSON.stringify(local));
+  await sbUpsert("m26_tabla", [{ equipo, stats }]);
+}
+
+function statsVacias() {
+  return { pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0 };
+}
+
 function renderTablaGrupo(g) {
   const info = grupos[g];
-  const eqs = info.eq;
-  const html = `
+  const eqs  = info.eq;
+
+  // Ordenar por pts desc, luego GD desc
+  const ordenados = [...eqs].sort((a,b)=>{
+    const sa = tablaBD[a]||statsVacias(), sb = tablaBD[b]||statsVacias();
+    const ptsDiff = sb.pts - sa.pts;
+    if (ptsDiff !== 0) return ptsDiff;
+    return (sb.gf-sb.gc) - (sa.gf-sa.gc);
+  });
+
+  const cols = ["pj","pg","pe","pp","gf","gc","pts"];
+  const heads = ["PJ","PG","PE","PP","GF","GC","Pts"];
+
+  const rows = ordenados.map((e,i) => {
+    const s = tablaBD[e] || statsVacias();
+    const gd = s.gf - s.gc;
+    return `<tr>
+      <td class="td-equipo">
+        <span class="pos-num">${i+1}</span>
+        <span class="eq-flag">${equiposBD[e]?.b||""}</span>
+        <span class="eq-nombre">${e}</span>
+      </td>
+      ${cols.map(c=>`<td class="td-stat editable"
+          data-equipo="${e}" data-col="${c}"
+          contenteditable="true"
+          spellcheck="false">${s[c]??0}</td>`).join("")}
+      <td class="td-gd ${gd>0?"pos":gd<0?"neg":""}">${gd>0?"+":""}${gd}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("grupo-table-wrap").innerHTML = `
     <div class="grupo-table-card">
       <div class="grupo-table-header">
         <span class="grupo-badge">GRUPO ${g}</span>
         <div class="grupo-teams-list">
-          ${eqs.map(e=>`<span class="grupo-team-chip">${equiposBD[e]?.b||''} ${e}</span>`).join("")}
+          ${eqs.map(e=>`<span class="grupo-team-chip">${equiposBD[e]?.b||""} ${e}</span>`).join("")}
         </div>
+        <span class="tabla-hint">✏️ toca un número para editar</span>
       </div>
       <div class="grupo-table-body">
         <table class="standings">
           <thead><tr>
-            <th>#&nbsp;&nbsp;Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>Pts</th>
+            <th class="th-equipo">Equipo</th>
+            ${heads.map(h=>`<th>${h}</th>`).join("")}
+            <th>DG</th>
           </tr></thead>
-          <tbody>
-            ${eqs.map((e,i)=>`<tr><td><span class="pos-num">${i+1}</span>${equiposBD[e]?.b||''} ${e}</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>`).join("")}
-          </tbody>
+          <tbody>${rows}</tbody>
         </table>
       </div>
     </div>`;
-  document.getElementById("grupo-table-wrap").innerHTML = html;
+
+  // Eventos de edición inline por celda
+  document.querySelectorAll(".td-stat.editable").forEach(td => {
+    // Seleccionar todo al hacer foco
+    td.addEventListener("focus", () => {
+      const range = document.createRange();
+      range.selectNodeContents(td);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // Guardar al perder foco o al presionar Enter
+    const guardar = async () => {
+      const eq  = td.dataset.equipo;
+      const col = td.dataset.col;
+      const val = parseInt(td.textContent) || 0;
+      td.textContent = val; // normaliza
+      const stats = { ...(tablaBD[eq] || statsVacias()), [col]: val };
+      tablaBD[eq] = stats;
+      await guardarTablaEquipo(eq, stats);
+      // Re-render para reordenar y recalcular DG
+      renderTablaGrupo(g);
+    };
+
+    td.addEventListener("blur", guardar);
+    td.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); td.blur(); }
+      // Solo permitir números
+      if (!/[\d\b]/.test(e.key) && !["ArrowLeft","ArrowRight","Tab","Delete","Backspace"].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+  });
 }
 
 // ══ RENDER PARTIDOS GRUPO ══
@@ -291,6 +379,7 @@ function renderFormActualizar() {
 // ══ INIT ══
 let equiposBD = {};
 let llaveBD   = {};
+let tablaBD   = {};
 let grupoSel  = "A";
 const mercados = ["1X2","Ambos marcan","Goles +/-","Corners +/-","Tarjetas +/-"];
 const activos  = new Set(mercados);
@@ -306,6 +395,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   equiposBD = await cargarEquipos();
   llaveBD   = await cargarLlave();
+  tablaBD   = await cargarTabla();
 
   // TABS GRUPOS
   const tabsEl = document.getElementById("tabs-grupo");
