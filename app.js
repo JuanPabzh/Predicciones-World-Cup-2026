@@ -2,7 +2,7 @@
 // MUNDIAL 2026 — Motor probabilidades + Supabase + Bracket
 // ══════════════════════════════════════════════════════
 
-const SUPABASE_URL = "https://gdsdeqrynsmgoflialxm.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://gdsdeqrynsmgoflialxm.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkc2RlcXJ5bnNtZ29mbGlhbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTc1OTcsImV4cCI6MjA5Njc3MzU5N30.JQXSU_kNJfwyoqGv0Lr6w3o1M68gPPp_xbcEt2kBVdc";
 
 const SK_EQ    = "m26_equipos";
