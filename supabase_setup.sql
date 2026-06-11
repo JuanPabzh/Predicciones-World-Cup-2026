@@ -18,7 +18,14 @@ CREATE TABLE IF NOT EXISTS m26_llave (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Fila inicial llave (solo 1 fila)
+-- Tabla de posiciones (editable desde la página, independiente de probabilidades)
+CREATE TABLE IF NOT EXISTS m26_tabla (
+  equipo     TEXT PRIMARY KEY,
+  stats      JSONB DEFAULT '{"pj":0,"pg":0,"pe":0,"pp":0,"gf":0,"gc":0,"pts":0}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE m26_tabla ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_all_tabla" ON m26_tabla FOR ALL USING (true) WITH CHECK (true);
 INSERT INTO m26_llave (id, data) VALUES (1, '{}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
