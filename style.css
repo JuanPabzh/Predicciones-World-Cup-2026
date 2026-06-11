@@ -221,19 +221,46 @@ table.standings thead th {
   letter-spacing:0.06em;text-transform:uppercase;font-size:10px;
   border-bottom:1px solid var(--border);text-align:center;
 }
-table.standings thead th:first-child{text-align:left;padding-left:1rem;}
+table.standings thead th.th-equipo{text-align:left;padding-left:1rem;}
 table.standings tbody td {
   padding:9px 8px;border-bottom:1px solid rgba(255,255,255,0.03);
   text-align:center;color:var(--text2);
 }
-table.standings tbody td:first-child{
-  text-align:left;padding-left:1rem;
-  color:var(--text);font-weight:500;
-  display:flex;align-items:center;gap:6px;
-}
 table.standings tbody tr:last-child td{border-bottom:none;}
 table.standings tbody tr:hover td{background:rgba(255,255,255,0.02);}
+
+/* Celda equipo */
+td.td-equipo{
+  text-align:left!important;padding-left:1rem!important;
+  color:var(--text)!important;font-weight:500;
+  display:flex!important;align-items:center;gap:6px;
+}
+.eq-flag{font-size:15px;}
+.eq-nombre{font-size:13px;}
+
+/* Celdas editables */
+td.td-stat.editable{
+  cursor:text;
+  border-radius:4px;
+  transition:background .15s;
+  min-width:32px;
+  font-variant-numeric:tabular-nums;
+}
+td.td-stat.editable:hover{background:rgba(0,201,177,0.08);}
+td.td-stat.editable:focus{
+  outline:none;
+  background:rgba(0,201,177,0.15);
+  color:var(--teal);
+  box-shadow:0 0 0 1px rgba(0,201,177,0.4);
+}
+
+/* Diferencia de goles */
+td.td-gd{color:var(--text3);font-size:12px;}
+td.td-gd.pos{color:var(--green);}
+td.td-gd.neg{color:var(--red);}
+
 .pos-num{color:var(--text3);font-size:11px;min-width:14px;}
+.tabla-hint{font-size:10px;color:var(--text3);margin-left:auto;font-style:italic;}
 
 /* ══ FILTROS MERCADO ══ */
 .filtro-label{font-size:10px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:6px;}
