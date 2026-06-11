@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Mundial 2026 — Probabilidades</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ══ HERO ══ -->
+<header class="hero">
+  <!-- Fondo ondas estilo logo M26 -->
+  <div class="hero-bg">
+    <div class="wave w1"></div>
+    <div class="wave w2"></div>
+    <div class="wave w3"></div>
+    <div class="wave w4"></div>
+    <div class="wave w5"></div>
+    <div class="wave w6"></div>
+    <div class="wave w7"></div>
+    <div class="wave w8"></div>
+    <div class="wave w9"></div>
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-fade"></div>
+
+  <div class="hero-inner">
+    <!-- Logo: pon tu PNG en assets/logo.png -->
+    <div class="hero-logo">
+      <img src="assets/logowc26.jpg" alt="FIFA World Cup 2026" class="logo-img"
+           onerror="this.style.display='none';document.getElementById('logo-ph').style.display='flex'"/>
+      <div id="logo-ph" class="logo-placeholder" style="display:none"><span>⚽</span></div>
+    </div>
+
+    <div class="hero-text">
+      <h1>FIFA World Cup 2026™</h1>
+      <div class="sub">Probabilidades estadísticas · Uso personal</div>
+      <div class="badges">
+        <span class="badge red">USA</span>
+        <span class="badge blue">MEX</span>
+        <span class="badge teal">CAN</span>
+        <span class="badge dark">48 equipos · 104 partidos</span>
+      </div>
+    </div>
+
+    <nav class="hero-nav">
+      <button class="nav-btn active" id="btn-grupos">Grupos</button>
+      <button class="nav-btn" id="btn-eliminatorias">Eliminatorias</button>
+      <button class="nav-btn accent" id="btn-actualizar">＋ Resultado</button>
+      <button class="btn-reset" id="btn-reset">↺</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+  <!-- VISTA GRUPOS -->
+  <div id="vista-grupos">
+    <div class="toolbar">
+      <div class="tabs-wrap" id="tabs-grupo"></div>
+    </div>
+    <div id="grupo-table-wrap"></div>
+    <div class="filtro-label">Mercados</div>
+    <div class="filtro-mercados" id="filtro-mercados"></div>
+    <div id="partidos-lista"></div>
+  </div>
+
+  <!-- VISTA ELIMINATORIAS -->
+  <div id="vista-eliminatorias" style="display:none">
+    <div class="bracket-hint">✏️ Toca cualquier partido para definir equipos y horario</div>
+    <div id="bracket-wrap"></div>
+  </div>
+
+  <!-- VISTA ACTUALIZAR -->
+  <div id="vista-actualizar" style="display:none">
+    <div class="panel-wrap">
+      <div class="panel-titulo">Agregar resultado</div>
+      <div class="panel-desc">
+        Selecciona el equipo e ingresa los datos del partido terminado.<br>
+        La fila más antigua sale sola y las probabilidades se recalculan.
+      </div>
+      <div class="form-grid" id="form-actualizar"></div>
+      <button class="btn-primary" id="btn-guardar">Guardar partido</button>
+      <div class="panel-msg" id="panel-msg"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Editar partido</div>
+    <div class="form-grid" id="modal-form"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modal-cancelar">Cancelar</button>
+      <button class="btn-primary" id="modal-guardar" style="width:auto;padding:10px 24px;">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
