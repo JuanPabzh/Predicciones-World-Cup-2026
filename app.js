@@ -5,10 +5,6 @@
 const SUPABASE_URL = "https://gdsdeqrynsmgoflialxm.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdkc2RlcXJ5bnNtZ29mbGlhbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTc1OTcsImV4cCI6MjA5Njc3MzU5N30.JQXSU_kNJfwyoqGv0Lr6w3o1M68gPPp_xbcEt2kBVdc";
 
-const SK_EQ    = "m26_equipos";
-const SK_LLAVE = "m26_llave";
-const SK_TABLA = "m26_tabla";
-
 // ── SUPABASE ──
 async function sbGet(table) {
   try {
@@ -42,55 +38,48 @@ function setStatus(state, msg) {
 
 // ── CARGA / GUARDA ──
 async function cargarEquipos() {
-  setStatus("", "Sincronizando...");
+  setStatus("", "Conectando...");
   const rows = await sbGet("m26_equipos");
-  if (rows && rows.length > 0) {
-    const data = {};
-    rows.forEach(r => { data[r.nombre] = { b: r.bandera, p: r.partidos }; });
-    localStorage.setItem(SK_EQ, JSON.stringify(data));
-    setStatus("ok", "Supabase ✓");
-    return data;
+  if (rows === null) {
+    setStatus("err", "Sin conexión");
+    return JSON.parse(JSON.stringify(equipos)); // estructura vacía de data.js
   }
-  setStatus("err", "Local");
-  const local = localStorage.getItem(SK_EQ);
-  return local ? JSON.parse(local) : JSON.parse(JSON.stringify(equipos));
+  const base = JSON.parse(JSON.stringify(equipos));
+  rows.forEach(r => { if (base[r.nombre]) base[r.nombre].p = r.partidos; });
+  setStatus("ok", "Supabase ✓");
+  return base;
 }
+
 async function guardarEquipo(nombre, datos) {
-  const cache = JSON.parse(localStorage.getItem(SK_EQ)||"{}");
-  cache[nombre] = datos;
-  localStorage.setItem(SK_EQ, JSON.stringify(cache));
   const ok = await sbUpsert("m26_equipos", [{ nombre, bandera: datos.b, partidos: datos.p }]);
-  setStatus(ok?"ok":"err", ok?"Supabase ✓":"Solo local");
+  setStatus(ok ? "ok" : "err", ok ? "Supabase ✓" : "Error al guardar");
+  return ok;
 }
+
 async function cargarLlave() {
   const rows = await sbGet("m26_llave");
-  if (rows && rows.length > 0) {
-    localStorage.setItem(SK_LLAVE, JSON.stringify(rows[0].data));
-    return rows[0].data;
-  }
-  const local = localStorage.getItem(SK_LLAVE);
-  return local ? JSON.parse(local) : construirLlaveInicial();
+  if (!rows || rows.length === 0) return construirLlaveInicial();
+  return rows[0].data || construirLlaveInicial();
 }
+
 async function guardarLlave(llave) {
-  localStorage.setItem(SK_LLAVE, JSON.stringify(llave));
-  await sbUpsert("m26_llave", [{ id: 1, data: llave }]);
+  const ok = await sbUpsert("m26_llave", [{ id: 1, data: llave }]);
+  setStatus(ok ? "ok" : "err", ok ? "Supabase ✓" : "Error al guardar");
+  return ok;
 }
+
 async function cargarTabla() {
   const rows = await sbGet("m26_tabla");
-  if (rows && rows.length > 0) {
-    const d = {};
-    rows.forEach(r => { d[r.equipo] = r.stats; });
-    localStorage.setItem(SK_TABLA, JSON.stringify(d));
-    return d;
-  }
-  const local = localStorage.getItem(SK_TABLA);
-  return local ? JSON.parse(local) : {};
+  if (!rows) return {};
+  const d = {};
+  rows.forEach(r => { d[r.equipo] = r.stats; });
+  return d;
 }
+
 async function guardarTablaEquipo(equipo, stats) {
-  const local = JSON.parse(localStorage.getItem(SK_TABLA)||"{}");
-  local[equipo] = stats;
-  localStorage.setItem(SK_TABLA, JSON.stringify(local));
-  await sbUpsert("m26_tabla", [{ equipo, stats }]);
+  const ok = await sbUpsert("m26_tabla", [{ equipo, stats }]);
+  setStatus(ok ? "ok" : "err", ok ? "Supabase ✓" : "Error al guardar");
+  return ok;
 }
 
 // ══ BRACKET OFICIAL FIFA 2026 ══
@@ -373,64 +362,118 @@ function renderPartidosGrupo(g,activos){
   document.getElementById("partidos-lista").innerHTML=html;
 }
 
-// ══ BRACKET VISUAL ══
-function flag(n){return n?(equiposBD[n]?.b||"")+" ":"";}
+// ══ BRACKET ÁRBOL VISUAL ══
+function flag(n){return n?(equiposBD[n]?.b||""):"";}
 
-function cardCruce(p, ronda) {
-  const def = p.l && p.v;
-  const lTxt = p.l ? `${flag(p.l)}${p.l}` : "Por definir";
-  const vTxt = p.v ? `${flag(p.v)}${p.v}` : "Por definir";
-  const ganadorBadge = p.ganador
-    ? `<span class="ganador-badge">${flag(p.ganador)}${p.ganador} ✓</span>` : "";
-  const marcador = (p.gl!==""&&p.gv!=="")
-    ? `<span class="marcador">${p.gl} - ${p.gv}${p.penales?` (pen: ${p.penales})`:""}</span>` : "";
-  let probHTML="";
-  if(def && equiposBD[p.l] && equiposBD[p.v]){
-    const pr=calcular(p.l,p.v,equiposBD);
-    if(pr) probHTML=`<div style="margin-top:4px">${barra(Object.keys(pr["1X2"]),Object.values(pr["1X2"]),"1X2")}</div>`;
-  }
-  return `<div class="bracket-card${def?" definido":""}${p.esFinal?" final-card":""}" data-ronda="${ronda}" data-id="${p.id}">
-    <div class="bracket-matchup">
-      <span class="bracket-team${p.l?p.ganador===p.l?" winner":"":" vacio"}">${lTxt}</span>
-      <span class="bracket-vs">VS</span>
-      <span class="bracket-team${p.v?p.ganador===p.v?" winner":"":" vacio"}">${vTxt}</span>
+function bcCard(p, ronda, extraClass="") {
+  if (!p) return "";
+  const lDef = !!p.l, vDef = !!p.v;
+  const lWin = p.ganador===p.l && lDef;
+  const vWin = p.ganador===p.v && vDef;
+  const lScore = (p.gl!==undefined && p.gl!=="") ? p.gl : "";
+  const vScore = (p.gv!==undefined && p.gv!=="") ? p.gv : "";
+  const pen = p.penales ? `<span class="bc-pen">pen: ${flag(p.penales)}${p.penales}</span>` : "";
+  return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}" data-ronda="${ronda}" data-id="${p.id}">
+    <div class="bc-team${lDef?lWin?" winner":"":""} ${!lDef?"vacio":""}">
+      <span class="bc-flag">${flag(p.l)}</span>
+      <span class="bc-name">${p.l||"Por definir"}</span>
+      ${lScore!==""?`<span class="bc-score">${lScore}</span>`:""}
     </div>
-    ${probHTML}
-    <div class="bracket-bottom">
-      <div>${marcador}${ganadorBadge}</div>
-      <button class="bracket-edit-btn" data-ronda="${ronda}" data-id="${p.id}">✏️</button>
+    <div class="bc-team${vDef?vWin?" winner":"":""} ${!vDef?"vacio":""}">
+      <span class="bc-flag">${flag(p.v)}</span>
+      <span class="bc-name">${p.v||"Por definir"}</span>
+      ${vScore!==""?`<span class="bc-score">${vScore}</span>`:""}
+    </div>
+    <div class="bc-footer">
+      ${pen}
+      <button class="bc-edit" data-ronda="${ronda}" data-id="${p.id}">✏️</button>
     </div>
   </div>`;
+}
+
+// Conector SVG entre columnas
+function connectorSVG(n, flip=false) {
+  // n = número de partidos en la columna de origen
+  // Dibuja líneas que conectan pares hacia el centro
+  const h = 100 / n;
+  let paths = "";
+  for (let i=0; i<n; i+=2) {
+    const y1 = (i + 0.5) * h;
+    const y2 = (i + 1.5) * h;
+    const ymid = (y1 + y2) / 2;
+    if (!flip) {
+      paths += `<line x1="0" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="0" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="50%" y1="${ymid}%" x2="100%" y2="${ymid}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    } else {
+      paths += `<line x1="100%" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="100%" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+               <line x1="50%" y1="${ymid}%" x2="0" y2="${ymid}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%;position:absolute;top:0;left:0">${paths}</svg>`;
 }
 
 function renderBracket(llave) {
   sincronizarOctavos(llave, tablaBD);
   propagarGanadores(llave);
 
-  const rondas = [
-    { key:"octavos", label:"OCTAVOS DE FINAL",       ids: CRUCES_OCTAVOS.map(c=>c.id), cols:2 },
-    { key:"cuartos", label:"CUARTOS DE FINAL",        ids: CRUCES_CUARTOS.map(c=>c.id), cols:2 },
-    { key:"semis",   label:"SEMIFINALES",              ids: CRUCES_SEMIS.map(c=>c.id),   cols:2 },
-    { key:"tercero", label:"TERCER Y CUARTO PUESTO",  ids: ["T1"],                       cols:1 },
-    { key:"final",   label:"⭐ GRAN FINAL",             ids: ["F1"],                       cols:1 },
-  ];
+  const o = llave.octavos, q = llave.cuartos, s = llave.semis;
 
-  let html="";
-  rondas.forEach(r=>{
-    html+=`<div class="bracket-round">
-      <div class="bracket-round-title">${r.label}<span></span></div>
-      <div class="bracket-grid" style="grid-template-columns:repeat(auto-fill,minmax(${r.cols===1?"100%":"290px"},1fr))">`;
-    r.ids.forEach(id=>{
-      const p = llave[r.key][id];
-      if (p) html += cardCruce(p, r.key);
-    });
-    html+=`</div></div>`;
-  });
+  // Lado izquierdo: O1-O8, Q1-Q4, S1-S2
+  const leftOct  = ["O1","O2","O3","O4","O5","O6","O7","O8"].map(id=>o[id]);
+  const leftQtr  = ["Q1","Q2","Q3","Q4"].map(id=>q[id]);
+  const leftSemi = ["S1","S2"].map(id=>s[id]);
 
-  document.getElementById("bracket-wrap").innerHTML=html;
+  // Lado derecho: O9-O16, Q5-Q8, S3-S4
+  const rightSemi = ["S3","S4"].map(id=>s[id]);
+  const rightQtr  = ["Q5","Q6","Q7","Q8"].map(id=>q[id]);
+  const rightOct  = ["O9","O10","O11","O12","O13","O14","O15","O16"].map(id=>o[id]);
 
-  document.querySelectorAll(".bracket-edit-btn").forEach(btn=>{
-    btn.addEventListener("click",(e)=>{
+  const col = (items, ronda, extraClass="") =>
+    `<div class="bracket-slots">${items.map(p=>bcCard(p,ronda,extraClass)).join("")}</div>`;
+
+  const conn = (n, flip=false) =>
+    `<div class="bracket-connector" style="position:relative;height:100%">${connectorSVG(n,flip)}</div>`;
+
+  const html = `
+  <div class="bracket-scroll">
+    <div class="bracket-tree" style="min-height:640px">
+      <!-- Títulos -->
+      <div class="bracket-col"><div class="bracket-col-title">OCTAVOS</div>${col(leftOct,"octavos")}</div>
+      <div style="position:relative">${conn(8,false)}</div>
+      <div class="bracket-col"><div class="bracket-col-title">CUARTOS</div>${col(leftQtr,"cuartos")}</div>
+      <div style="position:relative">${conn(4,false)}</div>
+      <div class="bracket-col"><div class="bracket-col-title">SEMIS</div>${col(leftSemi,"semis")}</div>
+      <!-- Centro -->
+      <div class="bracket-center"><span>🏆</span><span class="bracket-center-label">Final</span></div>
+      <!-- Lado derecho (invertido) -->
+      <div class="bracket-col"><div class="bracket-col-title">SEMIS</div>${col(rightSemi,"semis")}</div>
+      <div style="position:relative">${conn(4,true)}</div>
+      <div class="bracket-col"><div class="bracket-col-title">CUARTOS</div>${col(rightQtr,"cuartos")}</div>
+      <div style="position:relative">${conn(8,true)}</div>
+      <div class="bracket-col"><div class="bracket-col-title">OCTAVOS</div>${col(rightOct,"octavos")}</div>
+    </div>
+
+    <!-- Final y 3er puesto -->
+    <div class="bracket-endgame">
+      <div class="endgame-section">
+        <div class="endgame-title">🥉 TERCER Y CUARTO PUESTO</div>
+        ${bcCard(llave.tercero["T1"],"tercero"," tercero-card")}
+      </div>
+      <div class="endgame-section">
+        <div class="endgame-title">⭐ GRAN FINAL</div>
+        ${bcCard(llave.final["F1"],"final"," final-card")}
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById("bracket-wrap").innerHTML = html;
+
+  document.querySelectorAll(".bc-edit").forEach(btn => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
       abrirModalBracket(btn.dataset.ronda, btn.dataset.id, llave);
     });
@@ -586,15 +629,21 @@ document.addEventListener("DOMContentLoaded", async()=>{
 
   // GUARDAR RESULTADO
   document.getElementById("btn-guardar").addEventListener("click",async()=>{
-    equiposBD=await cargarEquipos();
+    equiposBD = await cargarEquipos();
     const eq=document.getElementById("up-eq").value;
     const fila=[+document.getElementById("up-ga").value||0,+document.getElementById("up-gc").value||0,+document.getElementById("up-ca").value||0,+document.getElementById("up-cc").value||0,+document.getElementById("up-ya").value||0,+document.getElementById("up-yc").value||0];
     equiposBD[eq].p.push(fila);
-    if(equiposBD[eq].p.length>10)equiposBD[eq].p.shift();
-    await guardarEquipo(eq,equiposBD[eq]);
+    if(equiposBD[eq].p.length>10) equiposBD[eq].p.shift();
     const msg=document.getElementById("panel-msg");
-    msg.textContent=`✓ Guardado ${equiposBD[eq].b} ${eq} (${equiposBD[eq].p.length} partidos)`;
-    setTimeout(()=>{msg.textContent="";},4000);
+    const ok = await guardarEquipo(eq, equiposBD[eq]);
+    if (ok) {
+      msg.style.color="var(--green)";
+      msg.textContent=`✓ Guardado ${equiposBD[eq].b} ${eq} (${equiposBD[eq].p.length} partidos)`;
+    } else {
+      msg.style.color="var(--red)";
+      msg.textContent=`✗ Sin conexión — dato no guardado. Conéctate a internet e intenta de nuevo.`;
+    }
+    setTimeout(()=>{msg.textContent="";},5000);
     if(document.getElementById("vista-grupos").style.display!=="none") renderPartidosGrupo(grupoSel,activos);
   });
 
