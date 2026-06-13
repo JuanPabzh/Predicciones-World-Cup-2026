@@ -367,19 +367,18 @@ function flag(n){return n?(equiposBD[n]?.b||""):"";}
 
 function bcCard(p, ronda, extraClass="") {
   if (!p) return "";
-  const lDef = !!p.l, vDef = !!p.v;
-  const lWin = p.ganador===p.l && lDef;
-  const vWin = p.ganador===p.v && vDef;
+  const lWin = p.ganador && p.ganador===p.l;
+  const vWin = p.ganador && p.ganador===p.v;
   const lScore = (p.gl!==undefined && p.gl!=="") ? p.gl : "";
   const vScore = (p.gv!==undefined && p.gv!=="") ? p.gv : "";
   const pen = p.penales ? `<span class="bc-pen">pen: ${flag(p.penales)}${p.penales}</span>` : "";
-  return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}" data-ronda="${ronda}" data-id="${p.id}">
-    <div class="bc-team${lDef?lWin?" winner":"":""} ${!lDef?"vacio":""}">
+  return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}">
+    <div class="bc-team${!p.l?" vacio":lWin?" winner":""}">
       <span class="bc-flag">${flag(p.l)}</span>
       <span class="bc-name">${p.l||"Por definir"}</span>
       ${lScore!==""?`<span class="bc-score">${lScore}</span>`:""}
     </div>
-    <div class="bc-team${vDef?vWin?" winner":"":""} ${!vDef?"vacio":""}">
+    <div class="bc-team${!p.v?" vacio":vWin?" winner":""}">
       <span class="bc-flag">${flag(p.v)}</span>
       <span class="bc-name">${p.v||"Por definir"}</span>
       ${vScore!==""?`<span class="bc-score">${vScore}</span>`:""}
@@ -391,29 +390,50 @@ function bcCard(p, ronda, extraClass="") {
   </div>`;
 }
 
-// Conector SVG entre columnas
-function connectorSVG(n, flip=false) {
-  // n = número de partidos en la columna de origen
-  // Dibuja líneas que conectan pares hacia el centro
-  const h = 100 / n;
+function makeSlots(items, ronda, extraClass="") {
+  return items.map(p =>
+    `<div class="b-slot">${bcCard(p, ronda, extraClass)}</div>`
+  ).join("");
+}
+
+// SVG conector: une pares de partidos hacia la siguiente ronda
+// dir: "right" = líneas salen a la derecha, "left" = salen a la izquierda
+function makeConnSVG(n, dir) {
+  // n = número de partidos en esta columna
+  // Dibuja n/2 pares de líneas
+  const pairs = n / 2;
+  const slotH = 100 / n; // altura % por slot
   let paths = "";
-  for (let i=0; i<n; i+=2) {
-    const y1 = (i + 0.5) * h;
-    const y2 = (i + 1.5) * h;
-    const ymid = (y1 + y2) / 2;
-    if (!flip) {
-      paths += `<line x1="0" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="0" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="50%" y1="${ymid}%" x2="100%" y2="${ymid}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+  for (let i = 0; i < pairs; i++) {
+    const y1 = (i * 2 + 0.5) * slotH;       // centro del slot superior del par
+    const y2 = (i * 2 + 1.5) * slotH;       // centro del slot inferior del par
+    const ym = (y1 + y2) / 2;               // punto medio = donde va el siguiente cruce
+    if (dir === "right") {
+      paths += `
+        <line x1="0" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="0" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="50%" y1="${ym}%" x2="100%" y2="${ym}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
     } else {
-      paths += `<line x1="100%" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="100%" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-               <line x1="50%" y1="${ymid}%" x2="0" y2="${ymid}%" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+      paths += `
+        <line x1="100%" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="100%" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="50%" y1="${ym}%" x2="0" y2="${ym}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
     }
   }
-  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%;position:absolute;top:0;left:0">${paths}</svg>`;
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${paths}</svg>`;
+}
+
+function makeConn(n, dir) {
+  return `<div class="b-conn"><div class="b-conn-inner">${makeConnSVG(n, dir)}</div></div>`;
+}
+
+function makeCol(title, items, ronda, extraClass="") {
+  return `<div class="b-col">
+    <div class="b-col-title">${title}</div>
+    <div class="b-slots">${makeSlots(items, ronda, extraClass)}</div>
+  </div>`;
 }
 
 function renderBracket(llave) {
@@ -422,50 +442,55 @@ function renderBracket(llave) {
 
   const o = llave.octavos, q = llave.cuartos, s = llave.semis;
 
-  // Lado izquierdo: O1-O8, Q1-Q4, S1-S2
-  const leftOct  = ["O1","O2","O3","O4","O5","O6","O7","O8"].map(id=>o[id]);
-  const leftQtr  = ["Q1","Q2","Q3","Q4"].map(id=>q[id]);
-  const leftSemi = ["S1","S2"].map(id=>s[id]);
+  // Lado izquierdo: O1-O8 → Q1-Q4 → S1-S2
+  const lo = ["O1","O2","O3","O4","O5","O6","O7","O8"].map(id=>o[id]);
+  const lq = ["Q1","Q2","Q3","Q4"].map(id=>q[id]);
+  const ls = ["S1","S2"].map(id=>s[id]);
 
-  // Lado derecho: O9-O16, Q5-Q8, S3-S4
-  const rightSemi = ["S3","S4"].map(id=>s[id]);
-  const rightQtr  = ["Q5","Q6","Q7","Q8"].map(id=>q[id]);
-  const rightOct  = ["O9","O10","O11","O12","O13","O14","O15","O16"].map(id=>o[id]);
-
-  const col = (items, ronda, extraClass="") =>
-    `<div class="bracket-slots">${items.map(p=>bcCard(p,ronda,extraClass)).join("")}</div>`;
-
-  const conn = (n, flip=false) =>
-    `<div class="bracket-connector" style="position:relative;height:100%">${connectorSVG(n,flip)}</div>`;
+  // Lado derecho: O9-O16 → Q5-Q8 → S3-S4
+  const rs = ["S3","S4"].map(id=>s[id]);
+  const rq = ["Q5","Q6","Q7","Q8"].map(id=>q[id]);
+  const ro = ["O9","O10","O11","O12","O13","O14","O15","O16"].map(id=>o[id]);
 
   const html = `
   <div class="bracket-scroll">
-    <div class="bracket-tree" style="min-height:640px">
-      <!-- Títulos -->
-      <div class="bracket-col"><div class="bracket-col-title">OCTAVOS</div>${col(leftOct,"octavos")}</div>
-      <div style="position:relative">${conn(8,false)}</div>
-      <div class="bracket-col"><div class="bracket-col-title">CUARTOS</div>${col(leftQtr,"cuartos")}</div>
-      <div style="position:relative">${conn(4,false)}</div>
-      <div class="bracket-col"><div class="bracket-col-title">SEMIS</div>${col(leftSemi,"semis")}</div>
-      <!-- Centro -->
-      <div class="bracket-center"><span>🏆</span><span class="bracket-center-label">Final</span></div>
-      <!-- Lado derecho (invertido) -->
-      <div class="bracket-col"><div class="bracket-col-title">SEMIS</div>${col(rightSemi,"semis")}</div>
-      <div style="position:relative">${conn(4,true)}</div>
-      <div class="bracket-col"><div class="bracket-col-title">CUARTOS</div>${col(rightQtr,"cuartos")}</div>
-      <div style="position:relative">${conn(8,true)}</div>
-      <div class="bracket-col"><div class="bracket-col-title">OCTAVOS</div>${col(rightOct,"octavos")}</div>
+    <div class="bracket-body">
+      <!-- LADO IZQUIERDO -->
+      <div class="bracket-side">
+        ${makeCol("OCTAVOS", lo, "octavos")}
+        ${makeConn(8, "right")}
+        ${makeCol("CUARTOS", lq, "cuartos")}
+        ${makeConn(4, "right")}
+        ${makeCol("SEMIS", ls, "semis")}
+        ${makeConn(2, "right")}
+      </div>
+
+      <!-- CENTRO TROFEO -->
+      <div class="bracket-center">
+        <span class="bracket-center-emoji">🏆</span>
+        <span class="bracket-center-label">Final</span>
+      </div>
+
+      <!-- LADO DERECHO (invertido) -->
+      <div class="bracket-side right">
+        ${makeCol("OCTAVOS", ro, "octavos")}
+        ${makeConn(8, "left")}
+        ${makeCol("CUARTOS", rq, "cuartos")}
+        ${makeConn(4, "left")}
+        ${makeCol("SEMIS", rs, "semis")}
+        ${makeConn(2, "left")}
+      </div>
     </div>
 
-    <!-- Final y 3er puesto -->
+    <!-- FINAL Y 3ER PUESTO -->
     <div class="bracket-endgame">
       <div class="endgame-section">
         <div class="endgame-title">🥉 TERCER Y CUARTO PUESTO</div>
-        ${bcCard(llave.tercero["T1"],"tercero"," tercero-card")}
+        ${bcCard(llave.tercero["T1"], "tercero", " tercero-card")}
       </div>
       <div class="endgame-section">
         <div class="endgame-title">⭐ GRAN FINAL</div>
-        ${bcCard(llave.final["F1"],"final"," final-card")}
+        ${bcCard(llave.final["F1"], "final", " final-card")}
       </div>
     </div>
   </div>`;
