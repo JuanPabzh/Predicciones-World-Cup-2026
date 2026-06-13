@@ -86,73 +86,56 @@ async function guardarTablaEquipo(equipo, stats) {
 // Estructura de octavos según imagen oficial
 // Cada cruce: { id, local: {fuente, grupo, pos}, visitante: {fuente, grupo, pos} }
 // fuente: "1" = primero, "2" = segundo, "3t" = tercero con código de grupos
-const CRUCES_OCTAVOS = [
-  // Lado izquierdo (arriba→abajo)
-  { id:"O1",  l:{f:"1",g:"E"},      v:{f:"3t",gs:"ABCDF"} },
-  { id:"O2",  l:{f:"1",g:"I"},      v:{f:"3t",gs:"CDFGH"} },
-  { id:"O3",  l:{f:"2",g:"A"},      v:{f:"2",g:"B"}       },
-  { id:"O4",  l:{f:"1",g:"F"},      v:{f:"2",g:"C"}       },
-  { id:"O5",  l:{f:"2",g:"K"},      v:{f:"2",g:"L"}       },
-  { id:"O6",  l:{f:"1",g:"H"},      v:{f:"2",g:"J"}       },
-  { id:"O7",  l:{f:"1",g:"D"},      v:{f:"3t",gs:"BEFIJ"} },
-  { id:"O8",  l:{f:"1",g:"G"},      v:{f:"3t",gs:"AEHIJ"} },
-  // Lado derecho (arriba→abajo)
-  { id:"O9",  l:{f:"1",g:"C"},      v:{f:"2",g:"F"}       },
-  { id:"O10", l:{f:"2",g:"E"},      v:{f:"2",g:"I"}       },
-  { id:"O11", l:{f:"1",g:"A"},      v:{f:"3t",gs:"CEFHI"} },
-  { id:"O12", l:{f:"1",g:"L"},      v:{f:"3t",gs:"EHIJK"} },
-  { id:"O13", l:{f:"1",g:"J"},      v:{f:"2",g:"H"}       },
-  { id:"O14", l:{f:"2",g:"D"},      v:{f:"2",g:"G"}       },
-  { id:"O15", l:{f:"1",g:"B"},      v:{f:"3t",gs:"EFGIJ"} },
-  { id:"O16", l:{f:"1",g:"K"},      v:{f:"3t",gs:"DEIJL"} },
+const RONDA32 = [
+  {id:"M73",  desc:"2°A vs 2°B",            lPos:"2A", vPos:"2B",  f3:false, f:"28 Jun", h:"15:00", est:"Los Ángeles"},
+  {id:"M74",  desc:"1°E vs 3°ABCDF",        lPos:"1E", vPos:"3t",  f3:true,  f:"29 Jun", h:"16:30", est:"Boston"},
+  {id:"M75",  desc:"1°F vs 2°C",            lPos:"1F", vPos:"2C",  f3:false, f:"29 Jun", h:"21:00", est:"Monterrey"},
+  {id:"M76",  desc:"1°C vs 2°F",            lPos:"1C", vPos:"2F",  f3:false, f:"29 Jun", h:"13:00", est:"Houston"},
+  {id:"M77",  desc:"1°I vs 3°CDFGH",        lPos:"1I", vPos:"3t",  f3:true,  f:"30 Jun", h:"17:00", est:"Nueva Jersey"},
+  {id:"M78",  desc:"2°E vs 2°I",            lPos:"2E", vPos:"2I",  f3:false, f:"30 Jun", h:"13:00", est:"Dallas"},
+  {id:"M79",  desc:"1°A vs 3°CEFHI",        lPos:"1A", vPos:"3t",  f3:true,  f:"30 Jun", h:"21:00", est:"Cd. México"},
+  {id:"M80",  desc:"1°L vs 3°EHIJK",        lPos:"1L", vPos:"3t",  f3:true,  f:"1 Jul",  h:"12:00", est:"Atlanta"},
+  {id:"M81",  desc:"1°D vs 3°BEFIJ",        lPos:"1D", vPos:"3t",  f3:true,  f:"1 Jul",  h:"20:00", est:"Santa Clara"},
+  {id:"M82",  desc:"1°G vs 3°AEHIJ",        lPos:"1G", vPos:"3t",  f3:true,  f:"1 Jul",  h:"16:00", est:"Seattle"},
+  {id:"M83",  desc:"2°K vs 2°L",            lPos:"2K", vPos:"2L",  f3:false, f:"2 Jul",  h:"19:00", est:"Toronto"},
+  {id:"M84",  desc:"1°H vs 2°J",            lPos:"1H", vPos:"2J",  f3:false, f:"2 Jul",  h:"15:00", est:"Los Ángeles"},
+  {id:"M85",  desc:"1°B vs 3°EFGIJ",        lPos:"1B", vPos:"3t",  f3:true,  f:"2 Jul",  h:"23:00", est:"Vancouver"},
+  {id:"M86",  desc:"1°J vs 2°H",            lPos:"1J", vPos:"2H",  f3:false, f:"3 Jul",  h:"18:00", est:"Miami"},
+  {id:"M87",  desc:"1°K vs 3°DEIJL",        lPos:"1K", vPos:"3t",  f3:true,  f:"3 Jul",  h:"21:30", est:"Kansas City"},
+  {id:"M88",  desc:"2°D vs 2°G",            lPos:"2D", vPos:"2G",  f3:false, f:"3 Jul",  h:"14:00", est:"Dallas"},
 ];
 
-// Cuartos: ganadores de octavos se enfrentan según bracket
-// Izquierda: O1/O2 → Q1, O3/O4 → Q2, O5/O6 → Q3, O7/O8 → Q4
-// Derecha:   O9/O10→ Q5, O11/O12→Q6, O13/O14→Q7, O15/O16→Q8
-const CRUCES_CUARTOS = [
-  { id:"Q1", o1:"O1", o2:"O2" },
-  { id:"Q2", o1:"O3", o2:"O4" },
-  { id:"Q3", o1:"O5", o2:"O6" },
-  { id:"Q4", o1:"O7", o2:"O8" },
-  { id:"Q5", o1:"O9",  o2:"O10" },
-  { id:"Q6", o1:"O11", o2:"O12" },
-  { id:"Q7", o1:"O13", o2:"O14" },
-  { id:"Q8", o1:"O15", o2:"O16" },
+const OCTAVOS_DEF = [
+  {id:"M89",  desc:"W-M74 vs W-M77",  w1:"M74", w2:"M77", f:"4 Jul",  h:"17:00", est:"Filadelfia"},
+  {id:"M90",  desc:"W-M73 vs W-M75",  w1:"M73", w2:"M75", f:"4 Jul",  h:"13:00", est:"Houston"},
+  {id:"M91",  desc:"W-M76 vs W-M78",  w1:"M76", w2:"M78", f:"5 Jul",  h:"16:00", est:"Nueva Jersey"},
+  {id:"M92",  desc:"W-M79 vs W-M80",  w1:"M79", w2:"M80", f:"5 Jul",  h:"20:00", est:"Cd. México"},
+  {id:"M93",  desc:"W-M83 vs W-M84",  w1:"M83", w2:"M84", f:"6 Jul",  h:"15:00", est:"Dallas"},
+  {id:"M94",  desc:"W-M81 vs W-M82",  w1:"M81", w2:"M82", f:"6 Jul",  h:"20:00", est:"Seattle"},
+  {id:"M95",  desc:"W-M86 vs W-M88",  w1:"M86", w2:"M88", f:"7 Jul",  h:"12:00", est:"Atlanta"},
+  {id:"M96",  desc:"W-M85 vs W-M87",  w1:"M85", w2:"M87", f:"7 Jul",  h:"16:00", est:"Vancouver"},
 ];
 
-// Semis: Q1/Q2→S1, Q3/Q4→S2, Q5/Q6→S3, Q7/Q8→S4
-const CRUCES_SEMIS = [
-  { id:"S1", q1:"Q1", q2:"Q2" },
-  { id:"S2", q1:"Q3", q2:"Q4" },
-  { id:"S3", q1:"Q5", q2:"Q6" },
-  { id:"S4", q1:"Q7", q2:"Q8" },
+const CUARTOS_DEF = [
+  {id:"M97",  desc:"W-M89 vs W-M90",  w1:"M89", w2:"M90", f:"9 Jul",  h:"16:00", est:"Boston"},
+  {id:"M98",  desc:"W-M93 vs W-M94",  w1:"M93", w2:"M94", f:"10 Jul", h:"15:00", est:"Los Ángeles"},
+  {id:"M99",  desc:"W-M91 vs W-M92",  w1:"M91", w2:"M92", f:"11 Jul", h:"17:00", est:"Miami"},
+  {id:"M100", desc:"W-M95 vs W-M96",  w1:"M95", w2:"M96", f:"11 Jul", h:"21:00", est:"Kansas City"},
 ];
 
-// Final y 3er puesto
-// S1/S2 → lado izquierdo, S3/S4 → lado derecho
-// Perdedores S1+S2 vs Perdedores S3+S4 = 3er puesto? No, es S1 perdedor vs S2 perdedor etc.
-// Formato estándar: perdedores de S1 y S2 juegan 3er puesto, ganadores juegan final
-// Aquí: perdedor S1 vs perdedor S3, ganador S1 vs ganador S3 (lados del bracket)
-const CRUCES_FINAL = [
-  { id:"T1", s1:"S1", s2:"S3", esTercero: true  },
-  { id:"F1", s1:"S2", s2:"S4", esFinal:   true  },
+const SEMIS_DEF = [
+  {id:"M101", desc:"W-M97 vs W-M98",   w1:"M97",  w2:"M98",  f:"14 Jul", h:"15:00", est:"Dallas"},
+  {id:"M102", desc:"W-M99 vs W-M100",  w1:"M99",  w2:"M100", f:"15 Jul", h:"15:00", est:"Atlanta"},
 ];
 
-// ── CONSTRUIR LLAVE ──
 function construirLlaveInicial() {
-  const llave = { octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
-  CRUCES_OCTAVOS.forEach(c => {
-    llave.octavos[c.id] = { id:c.id, l:"", v:"", gl:"", gv:"", penales:"", ganador:"", cruceL:c.l, cruceV:c.v };
-  });
-  CRUCES_CUARTOS.forEach(c => {
-    llave.cuartos[c.id] = { id:c.id, l:"", v:"", gl:"", gv:"", penales:"", ganador:"", o1:c.o1, o2:c.o2 };
-  });
-  CRUCES_SEMIS.forEach(c => {
-    llave.semis[c.id] = { id:c.id, l:"", v:"", gl:"", gv:"", penales:"", ganador:"", q1:c.q1, q2:c.q2 };
-  });
-  llave.tercero["T1"] = { id:"T1", l:"", v:"", gl:"", gv:"", penales:"", ganador:"", s1:"S1", s2:"S3", esTercero:true };
-  llave.final["F1"]   = { id:"F1", l:"", v:"", gl:"", gv:"", penales:"", ganador:"", s1:"S2", s2:"S4", esFinal:true };
+  const llave = { r32:{}, octavos:{}, cuartos:{}, semis:{}, tercero:{}, final:{} };
+  RONDA32.forEach(c     => { llave.r32[c.id]      = {...c, l:"", v:"", gl:"", gv:"", penales:"", ganador:""}; });
+  OCTAVOS_DEF.forEach(c => { llave.octavos[c.id]  = {...c, l:"", v:"", gl:"", gv:"", penales:"", ganador:""}; });
+  CUARTOS_DEF.forEach(c => { llave.cuartos[c.id]  = {...c, l:"", v:"", gl:"", gv:"", penales:"", ganador:""}; });
+  SEMIS_DEF.forEach(c   => { llave.semis[c.id]    = {...c, l:"", v:"", gl:"", gv:"", penales:"", ganador:""}; });
+  llave.tercero["M103"] = {id:"M103", desc:"Perdedor S1 vs Perdedor S2", l:"", v:"", gl:"", gv:"", penales:"", ganador:"", f:"18 Jul", h:"17:00", est:"Miami"};
+  llave.final["M104"]   = {id:"M104", desc:"Ganador S1 vs Ganador S2",   l:"", v:"", gl:"", gv:"", penales:"", ganador:"", f:"19 Jul", h:"15:00", est:"Nueva Jersey"};
   return llave;
 }
 
@@ -177,50 +160,77 @@ function obtenerTercero(grupos_str) {
   return "";
 }
 
-// ── SINCRONIZAR LLAVE CON TABLA ──
-function sincronizarOctavos(llave, tablaBD) {
-  CRUCES_OCTAVOS.forEach(c => {
-    const p = llave.octavos[c.id];
-    if (!p.ganador) { // solo si no hay resultado
-      if (c.l.f !== "3t") p.l = obtenerClasificado(c.l.f, c.l.g, tablaBD);
-      if (c.v.f !== "3t") p.v = obtenerClasificado(c.v.f, c.v.g, tablaBD);
-      // Los terceros se mantienen si ya fueron definidos manualmente
+// ── RESOLVER POSICIÓN DESDE TABLA ──
+function clasificado(pos, grupo) {
+  if (!grupo || !grupos[grupo]) return "";
+  const eqs = grupos[grupo].eq;
+  const ord = [...eqs].sort((a,b)=>{
+    const sa=tablaBD[a]||{pts:0,gf:0,gc:0}, sb=tablaBD[b]||{pts:0,gf:0,gc:0};
+    const dp=sb.pts-sa.pts; if(dp!==0) return dp;
+    return (sb.gf-sb.gc)-(sa.gf-sa.gc);
+  });
+  const n = parseInt(pos[0])-1; // "1E" → índice 0
+  return ord[n] || "";
+}
+
+// ── SINCRONIZAR R32 CON TABLA ──
+function sincronizarR32(llave) {
+  RONDA32.forEach(c => {
+    const p = llave.r32[c.id];
+    if (p.ganador) return; // ya tiene resultado, no tocar
+    // local
+    if (!c.f3) {
+      const [posL, grupoL] = [c.lPos[0], c.lPos.slice(1)];
+      p.l = clasificado(posL, grupoL);
     }
+    // visitante
+    if (!c.f3) {
+      const [posV, grupoV] = [c.vPos[0], c.vPos.slice(1)];
+      p.v = clasificado(posV, grupoV);
+    }
+    // Los 3eros (f3:true) se definen manualmente desde el modal
   });
 }
 
+// ── PROPAGACIÓN DE GANADORES ──
 function propagarGanadores(llave) {
-  // Cuartos: ganador de O → entra al cruce Q
-  CRUCES_CUARTOS.forEach(c => {
-    const p  = llave.cuartos[c.id];
-    const o1 = llave.octavos[c.o1], o2 = llave.octavos[c.o2];
-    if (!p.ganador) {
-      if (o1?.ganador) p.l = o1.ganador;
-      if (o2?.ganador) p.v = o2.ganador;
-    }
+  // R32 → Octavos
+  OCTAVOS_DEF.forEach(c => {
+    const p = llave.octavos[c.id];
+    if (p.ganador) return;
+    const r1 = llave.r32[c.w1], r2 = llave.r32[c.w2];
+    if (r1?.ganador) p.l = r1.ganador;
+    if (r2?.ganador) p.v = r2.ganador;
   });
-  // Semis: ganador de Q → entra al cruce S
-  CRUCES_SEMIS.forEach(c => {
-    const p  = llave.semis[c.id];
-    const q1 = llave.cuartos[c.q1], q2 = llave.cuartos[c.q2];
-    if (!p.ganador) {
-      if (q1?.ganador) p.l = q1.ganador;
-      if (q2?.ganador) p.v = q2.ganador;
-    }
+  // Octavos → Cuartos
+  CUARTOS_DEF.forEach(c => {
+    const p = llave.cuartos[c.id];
+    if (p.ganador) return;
+    const o1 = llave.octavos[c.w1], o2 = llave.octavos[c.w2];
+    if (o1?.ganador) p.l = o1.ganador;
+    if (o2?.ganador) p.v = o2.ganador;
   });
-  // 3er puesto: perdedores de semis
-  const t = llave.tercero["T1"];
-  const s1 = llave.semis[t.s1], s2 = llave.semis[t.s2];
+  // Cuartos → Semis
+  SEMIS_DEF.forEach(c => {
+    const p = llave.semis[c.id];
+    if (p.ganador) return;
+    const q1 = llave.cuartos[c.w1], q2 = llave.cuartos[c.w2];
+    if (q1?.ganador) p.l = q1.ganador;
+    if (q2?.ganador) p.v = q2.ganador;
+  });
+  // Semis → 3er puesto (perdedores)
+  const t = llave.tercero["M103"];
   if (!t.ganador) {
+    const s1 = llave.semis["M101"], s2 = llave.semis["M102"];
     if (s1?.ganador && s1.l && s1.v) t.l = s1.l===s1.ganador ? s1.v : s1.l;
     if (s2?.ganador && s2.l && s2.v) t.v = s2.l===s2.ganador ? s2.v : s2.l;
   }
-  // Final: ganadores de semis
-  const f = llave.final["F1"];
-  const sf1 = llave.semis[f.s1], sf2 = llave.semis[f.s2];
+  // Semis → Final (ganadores)
+  const f = llave.final["M104"];
   if (!f.ganador) {
-    if (sf1?.ganador) f.l = sf1.ganador;
-    if (sf2?.ganador) f.v = sf2.ganador;
+    const s1 = llave.semis["M101"], s2 = llave.semis["M102"];
+    if (s1?.ganador) f.l = s1.ganador;
+    if (s2?.ganador) f.v = s2.ganador;
   }
 }
 
@@ -327,7 +337,7 @@ function renderTablaGrupo(g) {
       tablaBD[eq]=stats;
       await guardarTablaEquipo(eq,stats);
       // Sincronizar octavos con nueva posición
-      sincronizarOctavos(llaveBD, tablaBD);
+      sincronizarR32(llaveBD);
       await guardarLlave(llaveBD);
       renderTablaGrupo(g);
     };
@@ -366,12 +376,23 @@ function renderPartidosGrupo(g,activos){
 function flag(n){return n?(equiposBD[n]?.b||""):"";}
 
 function bcCard(p, ronda, extraClass="") {
-  if (!p) return "";
+  if (!p) return '<div class="bracket-card"><div class="bc-team vacio">Por definir</div><div class="bc-team vacio">Por definir</div></div>';
   const lWin = p.ganador && p.ganador===p.l;
   const vWin = p.ganador && p.ganador===p.v;
   const lScore = (p.gl!==undefined && p.gl!=="") ? p.gl : "";
   const vScore = (p.gv!==undefined && p.gv!=="") ? p.gv : "";
   const pen = p.penales ? `<span class="bc-pen">pen: ${flag(p.penales)}${p.penales}</span>` : "";
+
+  // Probabilidades 1X2 si hay datos
+  let probBar = "";
+  if (p.l && p.v && equiposBD[p.l] && equiposBD[p.v] && !p.ganador) {
+    const pr = calcular(p.l, p.v, equiposBD);
+    if (pr) {
+      const ox = pr["1X2"];
+      probBar = `<div style="margin:3px 0 1px">${barra(Object.keys(ox), Object.values(ox), "1X2")}</div>`;
+    }
+  }
+
   return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}">
     <div class="bc-team${!p.l?" vacio":lWin?" winner":""}">
       <span class="bc-flag">${flag(p.l)}</span>
@@ -383,7 +404,9 @@ function bcCard(p, ronda, extraClass="") {
       <span class="bc-name">${p.v||"Por definir"}</span>
       ${vScore!==""?`<span class="bc-score">${vScore}</span>`:""}
     </div>
+    ${probBar}
     <div class="bc-footer">
+      <span class="bc-meta">${p.f||""} ${p.h||""}</span>
       ${pen}
       <button class="bc-edit" data-ronda="${ronda}" data-id="${p.id}">✏️</button>
     </div>
@@ -391,32 +414,24 @@ function bcCard(p, ronda, extraClass="") {
 }
 
 function makeSlots(items, ronda, extraClass="") {
-  return items.map(p =>
-    `<div class="b-slot">${bcCard(p, ronda, extraClass)}</div>`
-  ).join("");
+  return items.map(p => `<div class="b-slot">${bcCard(p, ronda, extraClass)}</div>`).join("");
 }
 
-// SVG conector: une pares de partidos hacia la siguiente ronda
-// dir: "right" = líneas salen a la derecha, "left" = salen a la izquierda
 function makeConnSVG(n, dir) {
-  // n = número de partidos en esta columna
-  // Dibuja n/2 pares de líneas
   const pairs = n / 2;
-  const slotH = 100 / n; // altura % por slot
+  const slotH = 100 / n;
   let paths = "";
   for (let i = 0; i < pairs; i++) {
-    const y1 = (i * 2 + 0.5) * slotH;       // centro del slot superior del par
-    const y2 = (i * 2 + 1.5) * slotH;       // centro del slot inferior del par
-    const ym = (y1 + y2) / 2;               // punto medio = donde va el siguiente cruce
-    if (dir === "right") {
-      paths += `
-        <line x1="0" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    const y1 = (i*2+0.5)*slotH;
+    const y2 = (i*2+1.5)*slotH;
+    const ym = (y1+y2)/2;
+    if (dir==="right") {
+      paths += `<line x1="0" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="0" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="50%" y1="${ym}%" x2="100%" y2="${ym}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
     } else {
-      paths += `
-        <line x1="100%" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      paths += `<line x1="100%" y1="${y1}%" x2="50%" y2="${y1}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="100%" y1="${y2}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="50%" y1="${y1}%" x2="50%" y2="${y2}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
         <line x1="50%" y1="${ym}%" x2="0" y2="${ym}%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
@@ -426,7 +441,7 @@ function makeConnSVG(n, dir) {
 }
 
 function makeConn(n, dir) {
-  return `<div class="b-conn"><div class="b-conn-inner">${makeConnSVG(n, dir)}</div></div>`;
+  return `<div class="b-conn"><div class="b-conn-inner">${makeConnSVG(n,dir)}</div></div>`;
 }
 
 function makeCol(title, items, ronda, extraClass="") {
@@ -437,66 +452,68 @@ function makeCol(title, items, ronda, extraClass="") {
 }
 
 function renderBracket(llave) {
-  sincronizarOctavos(llave, tablaBD);
+  sincronizarR32(llave);
   propagarGanadores(llave);
 
-  const o = llave.octavos, q = llave.cuartos, s = llave.semis;
+  const r = llave.r32, o = llave.octavos, q = llave.cuartos, s = llave.semis;
 
-  // Lado izquierdo: O1-O8 → Q1-Q4 → S1-S2
-  const lo = ["O1","O2","O3","O4","O5","O6","O7","O8"].map(id=>o[id]);
-  const lq = ["Q1","Q2","Q3","Q4"].map(id=>q[id]);
-  const ls = ["S1","S2"].map(id=>s[id]);
+  // Lado izquierdo: M73,M74,M75,M76,M77,M78,M79,M80 → M89,M90,M91,M92 → M97,M99 → M101
+  const lr32  = ["M73","M74","M75","M76","M77","M78","M79","M80"].map(id=>r[id]);
+  const loct  = ["M89","M90","M91","M92"].map(id=>o[id]);
+  const lqtr  = ["M97","M99"].map(id=>q[id]);
+  const lsemi = ["M101"].map(id=>s[id]);
 
-  // Lado derecho: O9-O16 → Q5-Q8 → S3-S4
-  const rs = ["S3","S4"].map(id=>s[id]);
-  const rq = ["Q5","Q6","Q7","Q8"].map(id=>q[id]);
-  const ro = ["O9","O10","O11","O12","O13","O14","O15","O16"].map(id=>o[id]);
+  // Lado derecho: M81,M82,M83,M84,M85,M86,M87,M88 → M93,M94,M95,M96 → M98,M100 → M102
+  const rsemi = ["M102"].map(id=>s[id]);
+  const rqtr  = ["M98","M100"].map(id=>q[id]);
+  const roct  = ["M93","M94","M95","M96"].map(id=>o[id]);
+  const rr32  = ["M81","M82","M83","M84","M85","M86","M87","M88"].map(id=>r[id]);
 
   const html = `
   <div class="bracket-scroll">
     <div class="bracket-body">
       <!-- LADO IZQUIERDO -->
       <div class="bracket-side">
-        ${makeCol("OCTAVOS", lo, "octavos")}
-        ${makeConn(8, "right")}
-        ${makeCol("CUARTOS", lq, "cuartos")}
-        ${makeConn(4, "right")}
-        ${makeCol("SEMIS", ls, "semis")}
-        ${makeConn(2, "right")}
+        ${makeCol("R.32", lr32, "r32")}
+        ${makeConn(8,"right")}
+        ${makeCol("OCTAVOS", loct, "octavos")}
+        ${makeConn(4,"right")}
+        ${makeCol("CUARTOS", lqtr, "cuartos")}
+        ${makeConn(2,"right")}
+        ${makeCol("SEMIS", lsemi, "semis")}
+        ${makeConn(1,"right")}
       </div>
-
-      <!-- CENTRO TROFEO -->
+      <!-- CENTRO -->
       <div class="bracket-center">
         <span class="bracket-center-emoji">🏆</span>
-        <span class="bracket-center-label">Final</span>
+        <span class="bracket-center-label">Final<br>19 Jul</span>
       </div>
-
-      <!-- LADO DERECHO (invertido) -->
+      <!-- LADO DERECHO -->
       <div class="bracket-side right">
-        ${makeCol("OCTAVOS", ro, "octavos")}
-        ${makeConn(8, "left")}
-        ${makeCol("CUARTOS", rq, "cuartos")}
-        ${makeConn(4, "left")}
-        ${makeCol("SEMIS", rs, "semis")}
-        ${makeConn(2, "left")}
+        ${makeCol("R.32", rr32, "r32")}
+        ${makeConn(8,"left")}
+        ${makeCol("OCTAVOS", roct, "octavos")}
+        ${makeConn(4,"left")}
+        ${makeCol("CUARTOS", rqtr, "cuartos")}
+        ${makeConn(2,"left")}
+        ${makeCol("SEMIS", rsemi, "semis")}
+        ${makeConn(1,"left")}
       </div>
     </div>
-
     <!-- FINAL Y 3ER PUESTO -->
     <div class="bracket-endgame">
       <div class="endgame-section">
-        <div class="endgame-title">🥉 TERCER Y CUARTO PUESTO</div>
-        ${bcCard(llave.tercero["T1"], "tercero", " tercero-card")}
+        <div class="endgame-title">🥉 TERCER Y CUARTO PUESTO · 18 Jul · Miami</div>
+        ${bcCard(llave.tercero["M103"], "tercero", " tercero-card")}
       </div>
       <div class="endgame-section">
-        <div class="endgame-title">⭐ GRAN FINAL</div>
-        ${bcCard(llave.final["F1"], "final", " final-card")}
+        <div class="endgame-title">⭐ GRAN FINAL · 19 Jul · Nueva Jersey</div>
+        ${bcCard(llave.final["M104"], "final", " final-card")}
       </div>
     </div>
   </div>`;
 
   document.getElementById("bracket-wrap").innerHTML = html;
-
   document.querySelectorAll(".bc-edit").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -507,6 +524,8 @@ function renderBracket(llave) {
 
 // ══ MODAL RESULTADO ELIMINATORIA ══
 function abrirModalBracket(ronda, id, llave) {
+  // Asegurar que r32 también esté en el objeto llave
+  if (!llave[ronda]) { console.error("Ronda no encontrada:", ronda); return; }
   const p = llave[ronda][id];
   const nombres = Object.keys(equiposBD).sort();
   const esEditable = !p.ganador; // si ya tiene ganador, solo ver
@@ -579,7 +598,8 @@ function abrirModalBracket(ronda, id, llave) {
     }
 
     llave[ronda][id] = { ...p, l:lEq, v:vEq, gl, gv, penales, ganador };
-    propagarGanadores(llave);
+    if (ronda !== "r32") propagarGanadores(llave);
+    else { propagarGanadores(llave); } // también propaga desde r32
     await guardarLlave(llave);
     document.getElementById("modal").style.display="none";
     renderBracket(llave);
@@ -647,7 +667,7 @@ document.addEventListener("DOMContentLoaded", async()=>{
       document.getElementById("vista-grupos").style.display       =v==="grupos"?"block":"none";
       document.getElementById("vista-eliminatorias").style.display=v==="eliminatorias"?"block":"none";
       document.getElementById("vista-actualizar").style.display   =v==="actualizar"?"block":"none";
-      if(v==="eliminatorias"){sincronizarOctavos(llaveBD,tablaBD);propagarGanadores(llaveBD);renderBracket(llaveBD);}
+      if(v==="eliminatorias"){sincronizarR32(llaveBD);propagarGanadores(llaveBD);renderBracket(llaveBD);}
       if(v==="actualizar")   renderFormActualizar();
     });
   });
