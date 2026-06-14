@@ -59,7 +59,10 @@ async function guardarEquipo(nombre, datos) {
 async function cargarLlave() {
   const rows = await sbGet("m26_llave");
   if (!rows || rows.length === 0) return construirLlaveInicial();
-  return rows[0].data || construirLlaveInicial();
+  const data = rows[0].data;
+  // Si la llave guardada no tiene r32 (formato viejo), reconstruir
+  if (!data || !data.r32) return construirLlaveInicial();
+  return data;
 }
 
 async function guardarLlave(llave) {
@@ -472,15 +475,15 @@ function renderBracket(llave) {
   const html = `
   <div class="bracket-scroll">
     <div class="bracket-body">
-      <!-- LADO IZQUIERDO -->
+      <!-- LADO IZQUIERDO: R32 → Octavos → Cuartos → Semis → centro -->
       <div class="bracket-side">
-        ${makeCol("R.32", lr32, "r32")}
+        ${makeCol("DIECISEISAVOS", lr32, "r32")}
         ${makeConn(8,"right")}
-        ${makeCol("OCTAVOS", loct, "octavos")}
+        ${makeCol("OCTAVOS DE FINAL", loct, "octavos")}
         ${makeConn(4,"right")}
-        ${makeCol("CUARTOS", lqtr, "cuartos")}
+        ${makeCol("CUARTOS DE FINAL", lqtr, "cuartos")}
         ${makeConn(2,"right")}
-        ${makeCol("SEMIS", lsemi, "semis")}
+        ${makeCol("SEMIFINAL", lsemi, "semis")}
         ${makeConn(1,"right")}
       </div>
       <!-- CENTRO -->
@@ -488,16 +491,16 @@ function renderBracket(llave) {
         <span class="bracket-center-emoji">🏆</span>
         <span class="bracket-center-label">Final<br>19 Jul</span>
       </div>
-      <!-- LADO DERECHO -->
+      <!-- LADO DERECHO: centro → Semis → Cuartos → Octavos → R32 -->
       <div class="bracket-side right">
-        ${makeCol("R.32", rr32, "r32")}
-        ${makeConn(8,"left")}
-        ${makeCol("OCTAVOS", roct, "octavos")}
-        ${makeConn(4,"left")}
-        ${makeCol("CUARTOS", rqtr, "cuartos")}
-        ${makeConn(2,"left")}
-        ${makeCol("SEMIS", rsemi, "semis")}
         ${makeConn(1,"left")}
+        ${makeCol("SEMIFINAL", rsemi, "semis")}
+        ${makeConn(2,"left")}
+        ${makeCol("CUARTOS DE FINAL", rqtr, "cuartos")}
+        ${makeConn(4,"left")}
+        ${makeCol("OCTAVOS DE FINAL", roct, "octavos")}
+        ${makeConn(8,"left")}
+        ${makeCol("DIECISEISAVOS", rr32, "r32")}
       </div>
     </div>
     <!-- FINAL Y 3ER PUESTO -->
@@ -613,12 +616,12 @@ function renderFormActualizar() {
     <div class="form-group full"><label>Equipo</label>
       <select id="up-eq">${nombres.map(n=>`<option value="${n}">${equiposBD[n]?.b||""} ${n}</option>`).join("")}</select>
     </div>
-    <div class="form-group"><label>⚽ Goles anotados</label><input type="number" id="up-ga" min="0" max="20" value="0"></div>
-    <div class="form-group"><label>⚽ Goles recibidos</label><input type="number" id="up-gc" min="0" max="20" value="0"></div>
-    <div class="form-group"><label>🔄 Corners a favor</label><input type="number" id="up-ca" min="0" max="30" value="0"></div>
-    <div class="form-group"><label>🔄 Corners en contra</label><input type="number" id="up-cc" min="0" max="30" value="0"></div>
-    <div class="form-group"><label>🟨 Amarillas propias</label><input type="number" id="up-ya" min="0" max="11" value="0"></div>
-    <div class="form-group"><label>🟨 Amarillas rival</label><input type="number" id="up-yc" min="0" max="11" value="0"></div>`;
+    <div class="form-group"><label>⚽ Goles anotados</label><input type="number" id="up-ga" min="0" max="20" placeholder="0"></div>
+    <div class="form-group"><label>⚽ Goles recibidos</label><input type="number" id="up-gc" min="0" max="20" placeholder="0"></div>
+    <div class="form-group"><label>🔄 Corners a favor</label><input type="number" id="up-ca" min="0" max="30" placeholder="0"></div>
+    <div class="form-group"><label>🔄 Corners en contra</label><input type="number" id="up-cc" min="0" max="30" placeholder="0"></div>
+    <div class="form-group"><label>🟨 Amarillas propias</label><input type="number" id="up-ya" min="0" max="11" placeholder="0"></div>
+    <div class="form-group"><label>🟨 Amarillas rival</label><input type="number" id="up-yc" min="0" max="11" placeholder="0"></div>`;
 }
 
 // ══ INIT ══
@@ -684,6 +687,7 @@ document.addEventListener("DOMContentLoaded", async()=>{
     if (ok) {
       msg.style.color="var(--green)";
       msg.textContent=`✓ Guardado ${equiposBD[eq].b} ${eq} (${equiposBD[eq].p.length} partidos)`;
+      renderFormActualizar(); // resetea todos los campos
     } else {
       msg.style.color="var(--red)";
       msg.textContent=`✗ Sin conexión — dato no guardado. Conéctate a internet e intenta de nuevo.`;
