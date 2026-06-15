@@ -385,18 +385,9 @@ function bcCard(p, ronda, extraClass="") {
   const lScore = (p.gl!==undefined && p.gl!=="") ? p.gl : "";
   const vScore = (p.gv!==undefined && p.gv!=="") ? p.gv : "";
   const pen = p.penales ? `<span class="bc-pen">pen: ${flag(p.penales)}${p.penales}</span>` : "";
+  const tieneProbs = p.l && p.v && equiposBD[p.l] && equiposBD[p.v];
 
-  // Probabilidades 1X2 si hay datos
-  let probBar = "";
-  if (p.l && p.v && equiposBD[p.l] && equiposBD[p.v] && !p.ganador) {
-    const pr = calcular(p.l, p.v, equiposBD);
-    if (pr) {
-      const ox = pr["1X2"];
-      probBar = `<div style="margin:3px 0 1px">${barra(Object.keys(ox), Object.values(ox), "1X2")}</div>`;
-    }
-  }
-
-  return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}">
+  return `<div class="bracket-card${p.l&&p.v?" definido":""}${extraClass}" data-ronda="${ronda}" data-id="${p.id}" style="cursor:pointer">
     <div class="bc-team${!p.l?" vacio":lWin?" winner":""}">
       <span class="bc-flag">${flag(p.l)}</span>
       <span class="bc-name">${p.l||"Por definir"}</span>
@@ -407,11 +398,13 @@ function bcCard(p, ronda, extraClass="") {
       <span class="bc-name">${p.v||"Por definir"}</span>
       ${vScore!==""?`<span class="bc-score">${vScore}</span>`:""}
     </div>
-    ${probBar}
     <div class="bc-footer">
-      <span class="bc-meta">${p.f||""} ${p.h||""}</span>
+      <span class="bc-meta">${p.f||""} ${p.h?p.h+" h":""}</span>
       ${pen}
-      <button class="bc-edit" data-ronda="${ronda}" data-id="${p.id}">✏️</button>
+      <div style="display:flex;gap:4px">
+        ${tieneProbs?`<button class="bc-prob" data-ronda="${ronda}" data-id="${p.id}">📊</button>`:""}
+        <button class="bc-edit" data-ronda="${ronda}" data-id="${p.id}">✏️</button>
+      </div>
     </div>
   </div>`;
 }
@@ -492,7 +485,7 @@ function renderBracket(llave) {
         <span class="bracket-center-label">Final<br>19 Jul</span>
       </div>
       <!-- LADO DERECHO: centro → Semis → Cuartos → Octavos → R32 -->
-      <div class="bracket-side right">
+      <div class="bracket-side">
         ${makeConn(1,"left")}
         ${makeCol("SEMIFINAL", rsemi, "semis")}
         ${makeConn(2,"left")}
@@ -522,6 +515,64 @@ function renderBracket(llave) {
       e.stopPropagation();
       abrirModalBracket(btn.dataset.ronda, btn.dataset.id, llave);
     });
+  });
+  document.querySelectorAll(".bc-prob").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      abrirPanelProbs(btn.dataset.ronda, btn.dataset.id, llave);
+    });
+  });
+}
+
+// ══ PANEL PROBABILIDADES ELIMINATORIA ══
+function abrirPanelProbs(ronda, id, llave) {
+  if (!llave[ronda]) return;
+  const p = llave[ronda][id];
+  if (!p || !p.l || !p.v) return;
+
+  const probs = calcular(p.l, p.v, equiposBD);
+  const todosActivos = new Set(["1X2","Ambos marcan","Goles +/-","Corners +/-","Tarjetas +/-"]);
+  const nombreRonda = {
+    r32:"Dieciseisavos de Final", octavos:"Octavos de Final",
+    cuartos:"Cuartos de Final", semis:"Semifinal",
+    tercero:"Tercer y Cuarto Puesto", final:"Gran Final ⭐"
+  }[ronda] || ronda;
+
+  document.getElementById("modal-title").textContent = nombreRonda;
+  document.getElementById("modal-form").innerHTML = `
+    <div class="form-group full">
+      <div class="prob-match-header">
+        <div class="prob-team">
+          <span class="prob-flag">${flag(p.l)}</span>
+          <span class="prob-name">${p.l}</span>
+        </div>
+        <div class="prob-vs-block">
+          <span class="prob-vs">VS</span>
+          <div class="prob-meta">
+            ${p.f ? `<span>${p.f}</span>` : ""}
+            ${p.h ? `<span class="meta-hora">${p.h} h</span>` : ""}
+          </div>
+          ${p.est ? `<div class="prob-est">${p.est}</div>` : ""}
+        </div>
+        <div class="prob-team right">
+          <span class="prob-flag">${flag(p.v)}</span>
+          <span class="prob-name">${p.v}</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group full">
+      ${probs ? renderMercados(probs, todosActivos) : '<p class="sin-datos">Sin estadísticas cargadas para estos equipos.</p>'}
+    </div>
+    <div class="form-group full" style="text-align:right">
+      <button class="btn-secondary" id="prob-a-resultado">✏️ Editar resultado</button>
+    </div>
+  `;
+
+  document.getElementById("modal").style.display = "flex";
+
+  document.getElementById("prob-a-resultado").addEventListener("click", () => {
+    document.getElementById("modal").style.display = "none";
+    abrirModalBracket(ronda, id, llave);
   });
 }
 
@@ -687,7 +738,8 @@ document.addEventListener("DOMContentLoaded", async()=>{
     if (ok) {
       msg.style.color="var(--green)";
       msg.textContent=`✓ Guardado ${equiposBD[eq].b} ${eq} (${equiposBD[eq].p.length} partidos)`;
-      renderFormActualizar(); // resetea todos los campos
+      renderFormActualizar();
+      document.getElementById("up-eq").value = eq;
     } else {
       msg.style.color="var(--red)";
       msg.textContent=`✗ Sin conexión — dato no guardado. Conéctate a internet e intenta de nuevo.`;
