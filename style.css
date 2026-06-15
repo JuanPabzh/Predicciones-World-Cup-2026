@@ -375,7 +375,6 @@ td.td-gd.neg{color:var(--red);}
   min-width:940px;
 }
 .bracket-side{display:flex;flex-direction:row;flex:1;}
-.bracket-side.right{flex-direction:row-reverse;}
 .b-col{display:flex;flex-direction:column;width:150px;flex-shrink:0;}
 .b-col-title{
   font-family:'Bebas Neue',sans-serif;font-size:10px;
@@ -434,6 +433,19 @@ td.td-gd.neg{color:var(--red);}
   letter-spacing:0.1em;color:var(--text3);text-align:center;
 }
 
+
+/* ══ PANEL PROBABILIDADES MODAL ══ */
+.prob-match-header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;padding:8px 0 12px;border-bottom:1px solid var(--border);margin-bottom:8px;
+}
+.prob-team{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.prob-flag{font-size:28px;line-height:1;}
+.prob-name{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:0.04em;color:var(--text);text-align:center;}
+.prob-vs-block{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+.prob-vs{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text3);letter-spacing:0.1em;}
+.prob-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;}
+.prob-est{font-size:10px;color:var(--text3);text-align:center;}
 
 /* ══ PANEL ACTUALIZAR ══ */
 .panel-wrap{
